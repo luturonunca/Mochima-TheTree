@@ -94,6 +94,7 @@
 	  // ✅ Make the layout container positioned
       document.getElementById("main").innerHTML = `
 		  <div id="scrollArea">
+           <div id="zoomCanvas">
 			<div id="layout">
 			  <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
 				style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
@@ -102,6 +103,7 @@
 				<button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
 			  </div>
 			</div>
+           </div>
 		  </div>
 
 		  <div id="explanation"></div>
@@ -129,7 +131,20 @@
           Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
         </p>
       `;
-    }
+          } else if (type === "sf2") {
+                      el.innerHTML = `
+                        <h3>🌪️ Turbulent Star Formation</h3>
+         <p>
+           In this model, star formation efficiency varies with local gas turbulence. Dense, turbulent regions trigger faster star formation than quiescent ones.
+         </p>
+       `;
+     } else if (type === "sn2") {
+       el.innerHTML = `
+         <h3>🧨 Mechanical Supernova Feedback</h3>
+         <p>
+           Momentum and energy from supernovae are injected based on resolved physics, pushing and heating surrounding gas more realistically than delayed cooling.
+         </p>
+       `;
   }
 function continueTree() {
   // Hide explanation + continue button
@@ -148,6 +163,12 @@ function continueTree() {
                  style="position: absolute; left: 200px; top: 550px; width: 200px; border-radius: 10px; z-index: 1; cursor: grab;"
                  onmousedown="startDrag(event)" />
           `);
+          layout.insertAdjacentHTML("beforeend", `
+           <div id="buttons2" style="display: none; position: absolute; left: 420px; top: 550px; z-index: 2;">
+              <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
+              <button onclick="showExplanation('sn')">💥 Supernova Feedback</button> 
+           </div>
+                      `);
   
 }
       let dragging = false;
@@ -178,7 +199,7 @@ function continueTree() {
                                 dragging = false;
                                 document.onmousemove = null;
                                 document.onmouseup = null;
-                                showButtonsNearImg2();
+                                document.getElementById("buttons2").style.display = "block";
                               };
             }
       let zoomLevel = 1;
