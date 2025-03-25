@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mochima Simulation Tree</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 80px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.2em;
+    }
+
+    h2 {
+      font-weight: normal;
+      color: #555;
+      margin-bottom: 2em;
+    }
+
+    button {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>The Mochima Simulation</h1>
+  <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
+  <button onclick="startExploration()">🚀 Start Exploration</button>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+          <script>
+                function startExploration() {
+                                      document.body.innerHTML = `
+                                        <h1>The Mochima Simulation</h1>
+                                        <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
+                                        <svg width="800" height="600"></svg>
+                                      `;
+
+                                      const data = { name: "Benchmark" };
+                                      const svg = d3.select("svg");
+                                      const width = +svg.attr("width");
+                                      const height = +svg.attr("height");
+
+                                      const g = svg.append("g").attr("transform", "translate(40,40)");
+                                      const treeLayout = d3.tree().size([height - 80, width - 160]);
+                                      const root = d3.hierarchy(data);
+                                      treeLayout(root);
+
+                                      // Draw nodes
+                                      const node = g.selectAll(".node")
+                                        .data(root.descendants())
+                                        .enter().append("g")
+                                        .attr("class", "node")
+                                        .attr("transform", d => `translate(${d.y},${d.x})`);
+
+                                      node.append("circle").attr("r", 20).style("fill", "#7FB3D5");
+                                      node.append("text")
+                                        .attr("dy", 3)
+                                        .attr("x", 30)
+                                        .style("font-size", "14px")
+                                        .text(d => d.data.name);
+                                    }
+          </script>
+</body>
+</html>
+
