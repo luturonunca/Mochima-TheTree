@@ -6,10 +6,18 @@
   <style>
     body {
       font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    h1, h2 {
+      text-align: center;
+      margin: 16px 0;
+    }
+    #main {
       text-align: center;
       margin-top: 60px;
     }
-
     button {
       font-size: 16px;
       padding: 10px 16px;
@@ -20,399 +28,380 @@
       border-radius: 6px;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    #layout {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 40px;
-    }
-
-    #scrollArea {
-      position: relative;
-      width: 100%;
-      height: 80vh;
+    #canvasArea {
+      width: 100vw;
+      height: 90vh;
       overflow: scroll;
-      border: 1px solid #ccc;
-      background: #fdfdfd;
+      position: relative;
+      border-top: 1px solid #ccc;
+      background: #f8f8f8;
     }
-
-    #zoomCanvas {
-      width: 2000px;
-      height: 2000px;
+    #layout {
+      position: relative;
+      width: 3000px;
+      height: 2500px;
       transform-origin: 0 0;
     }
-
-    #layout {
-      position: relative;
-      width: 2000px;
-      height: 2000px;
+    .sim-node {
+      position: absolute;
+      width: 200px;
+      cursor: grab;
     }
-
-    #explanation {
-      position: fixed;
-      bottom: 30px;
+    .sim-img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    .info-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      transform: translate(35%, -35%);
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      z-index: 2;
+    }
+    .spawn-button {
+      position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 10px 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      font-size: 16px;
-      line-height: 1.4;
-      max-width: 80%;
+      font-size: 11px;
+      line-height: 1.2;
+      padding: 6px 10px;
+      background-color: #004080;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: pre-line;
       text-align: center;
     }
-
-    #continue {
+    #infoCard {
       position: fixed;
-      bottom: 30px;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 250px;
+      display: none;
+      z-index: 100;
+    }
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    #zoomControls {
+      position: fixed;
+      bottom: 100px;
       right: 30px;
-      font-size: 16px;
-      padding: 10px 16px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
       z-index: 10;
+    }
+    #zoomControls button {
+      font-size: 18px;
+      padding: 6px 10px;
+      margin: 4px;
     }
   </style>
 </head>
 <body>
   <h1>The Mochima Simulation</h1>
   <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
-
   <div id="main">
     <button onclick="startExploration()">🚀 Start Exploration</button>
   </div>
 
+  <div id="infoCard"></div>
+
   <script>
-    let dragging = false;
-    let dragged = false;
-    let explained = {
-      sf2: false,
-      sn2: false,
-      proto: false
+    const connections = [];
+    let zoomLevel = 1;
+    let nodes = {};
+
+    const SIM_TREE = {
+      SF0DC: {
+        children: [
+          {
+            id: "SF1DCe1",
+            label: "Add\nturbulent\nSF",
+            dx: 0,
+            dy: 300,
+            image: "images/SF1DCe1.png",
+            physics: { sf: "Turbulent", sn: "Delayed Cooling" },
+            notes: "Introduced turbulence-based star formation."
+          }
+        ]
+      },
+      SF1DCe1: {
+        children: [
+          {
+            id: "SF1MEe1",
+            label: "Switch\nto\nMechanical FB",
+            dx: -250,
+            dy: 300,
+            image: "images/SF1MEe1.png",
+            physics: { sf: "Turbulent", sn: "Mechanical" },
+            notes: "SN feedback changed to mechanical model."
+          },
+          {
+            id: "SF1DC",
+            label: "Add\nprotostellar\nFB",
+            dx: 250,
+            dy: 300,
+            image: "images/SF1DC.png",
+            physics: { sf: "Turbulent", sn: "Delayed Cooling", pf: "Enabled" },
+            notes: "Protostellar feedback added (e.g., 50% suppression)."
+          }
+        ]
+      },
+      SF1MEe1: {
+        children: [
+          {
+            id: "SF1ME",
+            label: "Add\nprotostellar\nFB",
+            dx: 0,
+            dy: 300,
+            image: "images/SF1ME.png",
+            physics: { sf: "Turbulent", sn: "Mechanical", pf: "Enabled" },
+            notes: "Protostellar feedback added to mechanical feedback model."
+          }
+        ]
+      },
+      SF1DC: {
+        children: [
+          {
+            id: "SF1DC_agn_f01",
+            label: "AGN:\nclassic bondi\nf01 descent",
+            dx: -250,
+            dy: 300,
+            image: "images/SF1DC_agn_f01.png",
+            physics: { agn: "classic bondi f01" },
+            notes: "AGN feedback with classic Bondi (f01) and gradient descent."
+          },
+          {
+            id: "SF1DC_agn_f1",
+            label: "AGN:\nclassic bondi\nf1 descent",
+            dx: 250,
+            dy: 300,
+            image: "images/SF1DC_agn_f1.png",
+            physics: { agn: "classic bondi f1" },
+            notes: "AGN feedback with classic Bondi (f1) and gradient descent."
+          }
+        ]
+      },
+      SF1ME: {
+        children: [
+          {
+            id: "SF1ME_agn_f01",
+            label: "AGN:\nclassic bondi\nf01 descent",
+            dx: -300,
+            dy: 300,
+            image: "images/SF1ME_agn_f01.png",
+            physics: { agn: "classic bondi f01" },
+            notes: "AGN feedback with classic Bondi (f01)."
+          },
+          {
+            id: "SF1ME_agn_f1",
+            label: "AGN:\nclassic bondi\nf1 descent",
+            dx: -150,
+            dy: 300,
+            image: "images/SF1ME_agn_f1.png",
+            physics: { agn: "classic bondi f1" },
+            notes: "AGN feedback with classic Bondi (f1)."
+          },
+          {
+            id: "SF1ME_agn_f1_MB",
+            label: "AGN:\nmean bondi\nf1 descent",
+            dx: 0,
+            dy: 300,
+            image: "images/SF1ME_agn_f1_MB.png",
+            physics: { agn: "mean bondi f1" },
+            notes: "AGN with mean Bondi (f1)."
+          },
+          {
+            id: "SF1ME_agn_f1_MB_exp",
+            label: "AGN:\nexp mean\nf1 descent",
+            dx: 150,
+            dy: 300,
+            image: "images/SF1ME_agn_f1_MB_exp.png",
+            physics: { agn: "exp weighted mean bondi f1" },
+            notes: "Exp-weighted mean Bondi accretion with f1."
+          },
+          {
+            id: "SF1ME_agn_f1_MB_expturb",
+            label: "AGN:\nexp mean\nturb f1",
+            dx: 300,
+            dy: 300,
+            image: "images/SF1ME_agn_f1_MB_expturb.png",
+            physics: { agn: "exp weighted mean bondi + turb f1" },
+            notes: "Exp-weighted Bondi accretion + turbulence (f1)."
+          }
+        ]
+      }
     };
 
-    function startExploration() {
-      document.getElementById("main").innerHTML = `
-        <div id="scrollArea">
-          <div id="zoomCanvas">
-            <div id="layout">
-              <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
-                style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
-              <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
-                <button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
-                <button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="explanation"></div>
-        <button id="continue" onclick="continueTree()">➡️ Continue</button>
-        <div id="zoomControls" style="position: fixed; bottom: 100px; right: 30px; z-index: 10;">
-          <button onclick="zoomIn()">➕</button>
-          <button onclick="zoomOut()">➖</button>
-        </div>
-      `;
-    }
-
-    function showExplanation(type) {
-      const el = document.getElementById("explanation");
-
-      if (el.dataset.last === type && el.style.display === "block") {
-        el.style.display = "none";
-        el.dataset.last = "";
-        return;
+    class SimulationNode {
+      constructor({ id, image, physics, metadata, x, y }) {
+        this.id = id;
+        this.image = image;
+        this.physics = physics;
+        this.metadata = metadata;
+        this.x = x;
+        this.y = y;
+        this.infoVisible = false;
+        this.render();
+        nodes[id] = this;
       }
 
-      el.dataset.last = type;
-      el.style.display = "block";
+      render() {
+        const container = document.getElementById("layout");
+        this.node = document.createElement("div");
+        this.node.className = "sim-node";
+        this.node.style.left = this.x + "px";
+        this.node.style.top = this.y + "px";
 
-      if (type === "sf") {
-        el.innerHTML = `
-          <h3>🌟 Star Formation (Fixed Efficiency)</h3>
-          <p>
-            In this benchmark simulation, star formation is governed by a fixed efficiency. Stars form in cold, dense gas regions following a Schmidt law.
-          </p>
-        `;
-      } else if (type === "sn") {
-        el.innerHTML = `
-          <h3>💥 Supernova Feedback (Delayed Cooling)</h3>
-          <p>
-            Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
-          </p>
-        `;
-      } else if (type === "sf2") {
-        let html = `
-          <h3>🌪️ Turbulent Star Formation</h3>
-          <p>
-            In this model, star formation efficiency varies with local gas turbulence. The local gas velocity dispersion will impact the efficiency of star formation as described by the multi-freefall models.
-          </p>
-        `;
-        if (!explained.sf2) {
-          html = `
-            <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
-              ${html}
-              <p style="font-style: italic; color: gray;"> New.</p>
-            </div>
-          `;
-          explained.sf2 = true;
+        const img = document.createElement("img");
+        img.src = this.image;
+        img.className = "sim-img";
+
+        const infoBtn = document.createElement("img");
+        infoBtn.src = "images/info_icon_gal.png";
+        infoBtn.className = "info-button";
+        infoBtn.onclick = () => this.toggleInfo();
+
+        this.node.appendChild(img);
+        this.node.appendChild(infoBtn);
+        container.appendChild(this.node);
+
+        if (SIM_TREE[this.id]) {
+          SIM_TREE[this.id].children.forEach(child => {
+            const btn = document.createElement("button");
+            btn.className = "spawn-button";
+            btn.innerText = child.label;
+            btn.style.top = "105%";
+            btn.style.left = 100 + child.dx / 5 + "px";
+            btn.onclick = () => {
+              const sim = new SimulationNode({
+                id: child.id,
+                image: child.image,
+                physics: child.physics,
+                metadata: { notes: child.notes },
+                x: this.x + child.dx,
+                y: this.y + child.dy
+              });
+              const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+              svg.setAttribute("width", "3000");
+              svg.setAttribute("height", "2500");
+              const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              svg.appendChild(line);
+              document.getElementById("layout").appendChild(svg);
+              connections.push({ line, from: this.node, to: sim.node });
+              updateLines();
+              btn.remove();
+            };
+            this.node.appendChild(btn);
+          });
         }
-        el.innerHTML = html;
-      } else if (type === "sn2") {
-        let html = `
-          <h3>🧨 Mechanical Supernova Feedback</h3>
-          <p>
-              Momentum and energy from supernovae are injected based on resolved physics,
-              pushing and heating surrounding gas more realistically than delayed cooling.
-          </p>
-         `;
-         if (!explained.sn2) {
-           html = `
-             <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
-               ${html}
-               <p style="font-style: italic; color: gray;"> New.</p>
-             </div>
-         `;
-         explained.sn2 = true;
-       }
-       el.innerHTML = html;
-       } else if (type === "proto") {
-         let html = `
-          <h3>🌠 Protostellar Feedback</h3>
-          <p>
-            Protostellar outflows reduce star formation by preventing collapse in early phases. This is controlled by a suppression factor (100% = no suppression, 0% = full suppression).
-          </p>
-         `;
-         if (!explained.proto) {
-          html = `
-           <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
-             ${html}
-             <p style="font-style: italic; color: gray;"> New.</p>
-           </div>
-         `;
-         explained.proto = true;
-       }
-       el.innerHTML = html;
-     }
-    } // ✅ <- this closes showExplanation
-    
-    function startDragGeneric(e, wrapperId, lineId = null) {
-        const wrapper = document.getElementById(wrapperId);
-        const lineEl = lineId ? document.getElementById(lineId) : null;
 
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        isDragging = false;
+        this.enableDragging();
+      }
 
-        offsetX = e.clientX - wrapper.offsetLeft;
-        offsetY = e.clientY - wrapper.offsetTop;
+      toggleInfo() {
+        const card = document.getElementById("infoCard");
+        if (this.infoVisible) {
+          card.style.display = "none";
+          this.infoVisible = false;
+        } else {
+          card.innerHTML = `<h3>${this.id}</h3>` +
+            Object.entries(this.physics).map(([k, v]) => `<strong>${k.toUpperCase()}:</strong> ${v}<br>`).join('') +
+            `<strong>Notes:</strong> ${this.metadata.notes}`;
+          card.style.display = "block";
+          this.infoVisible = true;
+        }
+      }
 
-        const onMove = (e) => {
-          const dx = Math.abs(e.clientX - dragStartX);
-          const dy = Math.abs(e.clientY - dragStartY);
+      enableDragging() {
+        let offsetX, offsetY;
+        let isDragging = false;
 
-          if (dx > dragThreshold || dy > dragThreshold) {
-             isDragging = true;
-          }
-
-          if (isDragging) {
-             const x = e.clientX - offsetX;
-             const y = e.clientY - offsetY;
-
-             wrapper.style.left = x + "px";
-             wrapper.style.top = y + "px";
-
-             // Update connected line if provided
-             if (lineEl) {
-               lineEl.setAttribute("x2", x + 100); // center of image
-               lineEl.setAttribute("y2", y + 100);
-             }
-         }
+        const onMouseDown = (e) => {
+          isDragging = true;
+          offsetX = e.clientX - this.node.offsetLeft;
+          offsetY = e.clientY - this.node.offsetTop;
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
         };
 
-        const onUp = () => {
-          document.removeEventListener("mousemove", onMove);
-          document.removeEventListener("mouseup", onUp);
+        const onMouseMove = (e) => {
+          if (!isDragging) return;
+          const x = e.clientX - offsetX;
+          const y = e.clientY - offsetY;
+          this.node.style.left = x + "px";
+          this.node.style.top = y + "px";
+          updateLines();
         };
 
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
+        const onMouseUp = () => {
+          isDragging = false;
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        this.node.addEventListener("mousedown", onMouseDown);
+      }
     }
 
-
-    function toggleButtons2() {
-      const btns = document.getElementById("buttons2");
-      const wrapper = document.getElementById("img2wrapper");
-
-      const x = parseInt(wrapper.style.left || wrapper.offsetLeft);
-      const y = parseInt(wrapper.style.top || wrapper.offsetTop);
-
-      btns.style.left = (x + 220) + "px";
-      btns.style.top = y + "px";
-
-      btns.style.display = btns.style.display === "block" ? "none" : "block";
+    function updateLines() {
+      connections.forEach(({ line, from, to }) => {
+        const fx = from.offsetLeft + from.offsetWidth / 2;
+        const fy = from.offsetTop + from.offsetHeight;
+        const tx = to.offsetLeft + to.offsetWidth / 2;
+        const ty = to.offsetTop;
+        line.setAttribute("x1", fx);
+        line.setAttribute("y1", fy);
+        line.setAttribute("x2", tx);
+        line.setAttribute("y2", ty);
+        line.setAttribute("stroke", "#999");
+        line.setAttribute("stroke-width", "2");
+      });
     }
 
-    function continueTree() {
-      document.getElementById("explanation").style.display = "none";
-      document.getElementById("continue").style.display = "none";
-
-      const layout = document.getElementById("layout");
-      layout.style.position = "relative";
-
-      layout.insertAdjacentHTML("beforeend", `
-        <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-          <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
-        </svg>
-
-        <div id="img2wrapper" style="position: absolute; left: 200px; top: 550px; width: 200px; z-index: 1; cursor: grab;" onmousedown="startDrag(event)">
-          <img id="img2" src="images/SF1DCe1.png" style="width: 200px; border-radius: 10px;" />
-        </div>
-      `);
-
-      setTimeout(() => {
-       const wrapper = document.getElementById("img2wrapper");
-       wrapper.addEventListener("click", (e) => {
-         if (!dragged) toggleButtons2();
-       });
-      }, 0);
-
-      layout.insertAdjacentHTML("beforeend", `
-        <div id="buttons2" style="display: none; position: absolute; left: 420px; top: 550px; z-index: 2;">
-          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
-          <button onclick="showExplanation('sn')">💥 Supernova Feedback</button> 
-        </div>
-      `);
-      layout.insertAdjacentHTML("beforeend", `
-        <div id="branchButtons" style="position: absolute; left: 200px; top: 760px; z-index: 2;">
-          <button onclick="addMechanicalSN()">🧨 Switch to Mechanical SN</button>
-          <button onclick="addProtoFeedback()">🌠 Add Protostellar Feedback</button>
-        </div>
-      `);
-    }
-    function addMechanicalSN() {
-      const layout = document.getElementById("layout");
-
-      layout.insertAdjacentHTML("beforeend", `
-        <svg width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-           <line id="line_mech" x1="300" y1="650" x2="500" y2="900" stroke="#999" stroke-width="2" />
-        </svg>
-        <div id="img3wrapper" 
-             style="position: absolute; left: 400px; top: 850px; width: 200px; z-index: 1; cursor: grab;" 
-             onmousedown="startDragGeneric(event, 'img3wrapper', 'line_mech')">
-          <img id="img3" src="images/SF1MEe1.png" style="width: 200px; border-radius: 10px;" />
-        </div>
-        <div style="position: absolute; left: 620px; top: 850px; z-index: 2;">
-          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
-          <button onclick="showExplanation('sn2')">🧨 Mechanical Feedback</button>
-        </div>
-      `);
-    }
-    function addProtoFeedback() {
-      const layout = document.getElementById("layout");
-
-      layout.insertAdjacentHTML("beforeend", `
-        <svg width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-          <line id="line_proto" x1="300" y1="650" x2="100" y2="900" stroke="#999" stroke-width="2" />
-        </svg>
-        <div id="img4wrapper" 
-             style="position: absolute; left: 0px; top: 850px; width: 200px; z-index: 1; cursor: grab;"
-             onmousedown="startDragGeneric(event, 'img4wrapper', 'line_proto')">
-          <img id="img4" src="images/SF1DC.png" style="width: 200px; border-radius: 10px;" />
-        </div>
-        <div style="position: absolute; left: 220px; top: 850px; z-index: 2;">
-          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
-          <button onclick="showExplanation('proto')">🌠 Protostellar Feedback</button>
-        </div>
-       `);
-     }
-    let offsetX, offsetY;
-    const line = () => document.getElementById("line1");
-    let isDragging = false;
-    let dragThreshold = 5;
-    let dragStartX = 0;
-    let dragStartY = 0;
-
-    function startDrag(e) {
-	  const wrapper = document.getElementById("img2wrapper");
-
-	  dragStartX = e.clientX;
-	  dragStartY = e.clientY;
-	  isDragging = false;
-
-	  offsetX = e.clientX - wrapper.offsetLeft;
-	  offsetY = e.clientY - wrapper.offsetTop;
-
-	  const onMove = (e) => {
-		const dx = Math.abs(e.clientX - dragStartX);
-		const dy = Math.abs(e.clientY - dragStartY);
-
-		if (dx > dragThreshold || dy > dragThreshold) {
-		  isDragging = true;
-		}
-
-		if (isDragging) {
-		  const x = e.clientX - offsetX;
-		  const y = e.clientY - offsetY;
-
-		  wrapper.style.left = x + "px";
-		  wrapper.style.top = y + "px";
-
-		  line().setAttribute("x2", x + 100);
-		  line().setAttribute("y2", y + 100);
-          // Also update branch lines if they exist
-          const lineMech = document.getElementById("line_mech");
-          if (lineMech) {
-           lineMech.setAttribute("x1", x + 100); // image center x
-           lineMech.setAttribute("y1", y + 100); // image center y
-          }
-
-          const lineProto = document.getElementById("line_proto");
-          if (lineProto) {
-           lineProto.setAttribute("x1", x + 100);
-           lineProto.setAttribute("y1", y + 100);
-          }
-
-		  document.getElementById("buttons2").style.display = "none";
-		}
-	  };
-
-	  const onUp = () => {
-		document.removeEventListener("mousemove", onMove);
-		document.removeEventListener("mouseup", onUp);
-
-		if (!isDragging) {
-		  toggleButtons2(); // Only if it was a click
-		} else {
-		  document.getElementById("buttons2").style.display = "block";
-		}
-	  };
-
-	  document.addEventListener("mousemove", onMove);
-	  document.addEventListener("mouseup", onUp);
-      
-    }
-
-    let zoomLevel = 1;
     function zoomIn() {
       zoomLevel *= 1.1;
-      document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
+      document.getElementById("layout").style.transform = `scale(${zoomLevel})`;
     }
 
     function zoomOut() {
       zoomLevel /= 1.1;
-      document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
+      document.getElementById("layout").style.transform = `scale(${zoomLevel})`;
+    }
+
+    function startExploration() {
+      document.getElementById("main").innerHTML = `
+        <div id="canvasArea">
+          <div id="layout"></div>
+        </div>
+        <div id="zoomControls">
+          <button onclick="zoomIn()">➕</button>
+          <button onclick="zoomOut()">➖</button>
+        </div>
+      `;
+
+      new SimulationNode({
+        id: "SF0DC",
+        image: "images/SF0DC.png",
+        physics: { sf: "Fixed Efficiency", sn: "Delayed Cooling" },
+        metadata: { notes: "Benchmark simulation with fixed star formation and delayed SN cooling." },
+        x: 500,
+        y: 100
+      });
     }
   </script>
 </body>
 </html>
+
