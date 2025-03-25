@@ -39,6 +39,11 @@
 	  border: 1px solid #ccc;
 	  background: #fdfdfd;
 	}
+    #zoomCanvas {
+          width: 2000px;
+          height: 2000px;
+          transform-origin: 0 0;
+    }
 
 	#layout {
 	  position: relative;
@@ -87,18 +92,23 @@
   <script>
   function startExploration() {
 	  document.getElementById("main").innerHTML = `
-		<div id="layout">
-		  <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
-			style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
-		  <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
-			<button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
-			<button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
-		  </div>
-		</div>
+        <div id="scrollArea">
+          <div id="zoomCanvas">
+            <div id="layout">
+              <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
+                style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
+              <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
+                <button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
+                <button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
 		<div id="explanation"></div>
 
-		<button id="continue" onclick="continueTree()">➡️ Continue</button>
+		<button id="continue" onclick="continueTree()">➡️ Continuee</button>
+        
 	  `;
 
 	  // ✅ Make the layout container positioned
@@ -116,6 +126,10 @@
 
 		  <div id="explanation"></div>
 		  <button id="continue" onclick="continueTree()">➡️ Continue</button>
+          <div id="zoomControls" style="position: fixed; bottom: 100px; right: 30px; z-index: 10;">
+            <button onclick="zoomIn()">➕</button>
+            <button onclick="zoomOut()">➖</button>
+          </div>
 		`;
   }
   function showExplanation(type) {
@@ -145,15 +159,16 @@ function continueTree() {
   // Place both images and draw connecting line in background
   const layout = document.getElementById("layout");
   layout.style.position = "relative";
-          layout.innerHTML += `
+          layout.insertAdjacentHTML("beforeend", `
             <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-              <line id="line1" x1="300" y1="200" x2="700" y2="300" stroke="#999" stroke-width="2" />
+              <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
             </svg>
 
             <img id="img2" src="images/SF1DCe1.png"
-                                  style="position: absolute; left: 600px; top: 250px; width: 200px; border-radius: 10px; z-index: 1; cursor: grab;"
-                                         onmousedown="startDrag(event)" />
-          `;
+                 style="position: absolute; left: 200px; top: 550px; width: 200px; border-radius: 10px; z-index: 1; cursor: grab;"
+                 onmousedown="startDrag(event)" />
+          `);
+  
 }
       let dragging = false;
       let offsetX, offsetY;
