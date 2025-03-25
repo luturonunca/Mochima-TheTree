@@ -91,26 +91,6 @@
 
   <script>
   function startExploration() {
-	  document.getElementById("main").innerHTML = `
-        <div id="scrollArea">
-          <div id="zoomCanvas">
-            <div id="layout">
-              <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
-                style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
-              <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
-                <button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
-                <button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-		<div id="explanation"></div>
-
-		<button id="continue" onclick="continueTree()">➡️ Continuee</button>
-        
-	  `;
-
 	  // ✅ Make the layout container positioned
       document.getElementById("main").innerHTML = `
 		  <div id="scrollArea">
@@ -200,6 +180,17 @@ function continueTree() {
                                 document.onmouseup = null;
                                 showButtonsNearImg2();
                               };
+            }
+      let zoomLevel = 1;
+
+      function zoomIn() {
+                  zoomLevel *= 1.1;
+                  document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
+            }
+
+      function zoomOut() {
+                  zoomLevel /= 1.1;
+                  document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
             }
   </script>
 </body>
