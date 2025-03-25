@@ -167,7 +167,6 @@
            explained.sf2 = true;
          }
 
-         const el = document.getElementById("explanation");
          el.style.display = "block";
          el.innerHTML = html
 
@@ -177,7 +176,7 @@
          <p>
            Momentum and energy from supernovae are injected based on resolved physics, pushing and heating surrounding gas more realistically than delayed cooling.
          </p>
-       `;
+     `;}
      }
   }
 function toggleButtons2() {
@@ -221,14 +220,14 @@ function continueTree() {
               <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
               <button onclick="showExplanation('sn')">💥 Supernova Feedback</button> 
            </div>
-                      `);
+     `);
   
-          }
-      let dragging = false;
-      let offsetX, offsetY;
-      const line = () => document.getElementById("line1");
+          
+     let dragging = false;
+     let offsetX, offsetY;
+     const line = () => document.getElementById("line1");
 
-      function startDrag(e) {
+   function startDrag(e) {
         dragging = true;
         dragged = false;
 
