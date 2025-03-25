@@ -42,37 +42,19 @@
   <button onclick="startExploration()">🚀 Start Exploration</button>
   <script src="https://d3js.org/d3.v7.min.js"></script>
           <script>
-                function startExploration() {
-                                      document.body.innerHTML = `
-                                        <h1>The Mochima Simulation</h1>
-                                        <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
-                                        <svg width="800" height="600"></svg>
-                                      `;
-
-                                      const data = { name: "Benchmark" };
-                                      const svg = d3.select("svg");
-                                      const width = +svg.attr("width");
-                                      const height = +svg.attr("height");
-
-                                      const g = svg.append("g").attr("transform", "translate(40,40)");
-                                      const treeLayout = d3.tree().size([height - 80, width - 160]);
-                                      const root = d3.hierarchy(data);
-                                      treeLayout(root);
-
-                                      // Draw nodes
-                                      const node = g.selectAll(".node")
-                                        .data(root.descendants())
-                                        .enter().append("g")
-                                        .attr("class", "node")
-                                        .attr("transform", d => `translate(${d.y},${d.x})`);
-
-                                      node.append("circle").attr("r", 20).style("fill", "#7FB3D5");
-                                      node.append("text")
-                                        .attr("dy", 3)
-                                        .attr("x", 30)
-                                        .style("font-size", "14px")
-                                        .text(d => d.data.name);
-                                    }
+              function startExploration() {
+                                    document.body.innerHTML = `
+                                      <h1>The Mochima Simulation</h1>
+                                      <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
+                                      <div style="display: flex; justify-content: center; align-items: center; margin-top: 40px;">
+                                        <img src="images/SF0DC.png" width="200" style="border-radius: 10px; margin-right: 40px;" />
+                                        <div>
+                                          <button onclick="alert('Star Formation clicked')" style="margin-bottom: 10px;">🌟 Star Formation</button><br>
+                                          <button onclick="alert('Feedbacks clicked')">💥 Feedbacks</button>
+                                        </div>
+                                      </div>
+                                    `;
+                                  }
           </script>
 </body>
 </html>
