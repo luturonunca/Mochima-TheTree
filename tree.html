@@ -7,55 +7,185 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      margin-top: 80px;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 0.2em;
-    }
-
-    h2 {
-      font-weight: normal;
-      color: #555;
-      margin-bottom: 2em;
+      margin-top: 60px;
     }
 
     button {
-      font-size: 1.2em;
-      padding: 10px 20px;
+      font-size: 16px;
+      padding: 10px 16px;
+      margin: 6px;
       background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
     button:hover {
       background-color: #45a049;
     }
+
+    #layout {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 40px;
+    }
+	#scrollArea {
+	  position: relative;
+	  width: 100%;
+	  height: 80vh;
+	  overflow: scroll;
+	  border: 1px solid #ccc;
+	  background: #fdfdfd;
+	}
+
+	#layout {
+	  position: relative;
+	  width: 2000px;  /* ← large enough to allow scrolling */
+	  height: 2000px;
+    }
+
+    #explanation {
+	  position: fixed;
+	  bottom: 30px;
+	  left: 50%;
+	  transform: translateX(-50%);
+	  z-index: 10;
+	  background: rgba(255, 255, 255, 0.95);
+	  padding: 10px 20px;
+	  border-radius: 8px;
+	  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+	  font-size: 16px;
+	  line-height: 1.4;
+	  max-width: 80%;
+	  text-align: center;
+    }
+    #continue {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      font-size: 16px;
+      padding: 10px 16px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
   <h1>The Mochima Simulation</h1>
   <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
-  <button onclick="startExploration()">🚀 Start Exploration</button>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-          <script>
-              function startExploration() {
-                                    document.body.innerHTML = `
-                                      <h1>The Mochima Simulation</h1>
-                                      <h2>An interactive walkthrough of how subgrid physics shape a simulated galaxy</h2>
-                                      <div style="display: flex; justify-content: center; align-items: center; margin-top: 40px;">
-                                        <img src="images/SF0DC.png" width="200" style="border-radius: 10px; margin-right: 40px;" />
-                                        <div>
-                                          <button onclick="alert('Star Formation clicked')" style="margin-bottom: 10px;">🌟 Star Formation</button><br>
-                                          <button onclick="alert('Feedbacks clicked')">💥 Feedbacks</button>
-                                        </div>
-                                      </div>
-                                    `;
-                                  }
-          </script>
+
+  <div id="main">
+    <button onclick="startExploration()">🚀 Start Exploration</button>
+  </div>
+
+  <script>
+  function startExploration() {
+	  document.getElementById("main").innerHTML = `
+		<div id="layout">
+		  <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
+			style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
+		  <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
+			<button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
+			<button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
+		  </div>
+		</div>
+
+		<div id="explanation"></div>
+
+		<button id="continue" onclick="continueTree()">➡️ Continue</button>
+	  `;
+
+	  // ✅ Make the layout container positioned
+      document.getElementById("main").innerHTML = `
+		  <div id="scrollArea">
+			<div id="layout">
+			  <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
+				style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
+			  <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
+				<button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
+				<button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
+			  </div>
+			</div>
+		  </div>
+
+		  <div id="explanation"></div>
+		  <button id="continue" onclick="continueTree()">➡️ Continue</button>
+		`;
+  }
+  function showExplanation(type) {
+    const el = document.getElementById("explanation");
+
+    if (type === "sf") {
+      el.innerHTML = `
+        <h3>🌟 Star Formation (Fixed Efficiency)</h3>
+        <p>
+          In this benchmark simulation, star formation is governed by a fixed efficiency. Stars form in cold, dense gas regions following a Schmidt law.
+        </p>
+      `;
+    } else if (type === "sn") {
+      el.innerHTML = `
+        <h3>💥 Supernova Feedback (Delayed Cooling)</h3>
+        <p>
+          Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
+        </p>
+      `;
+    }
+  }
+function continueTree() {
+  // Hide explanation + continue button
+  document.getElementById("explanation").style.display = "none";
+  document.getElementById("continue").style.display = "none";
+
+  // Place both images and draw connecting line in background
+  const layout = document.getElementById("layout");
+  layout.style.position = "relative";
+          layout.innerHTML += `
+            <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
+              <line id="line1" x1="300" y1="200" x2="700" y2="300" stroke="#999" stroke-width="2" />
+            </svg>
+
+            <img id="img2" src="images/SF1DCe1.png"
+                                  style="position: absolute; left: 600px; top: 250px; width: 200px; border-radius: 10px; z-index: 1; cursor: grab;"
+                                         onmousedown="startDrag(event)" />
+          `;
+}
+      let dragging = false;
+      let offsetX, offsetY;
+      const line = () => document.getElementById("line1");
+
+      function startDrag(e) {
+                  dragging = true;
+                  const img = e.target;
+                  offsetX = e.clientX - img.offsetLeft;
+                  offsetY = e.clientY - img.offsetTop;
+
+                  document.onmousemove = e => {
+                                if (!dragging) return;
+                                const img2 = document.getElementById("img2");
+                                const x = e.clientX - offsetX;
+                                const y = e.clientY - offsetY;
+
+                                img2.style.left = x + "px";
+                                img2.style.top = y + "px";
+
+                                // Update the line endpoint to center of img2
+                                line().setAttribute("x2", x + 100);  // 100 = half of 200px image width
+                                line().setAttribute("y2", y + 100);
+                              };
+
+                  document.onmouseup = () => {
+                                dragging = false;
+                                document.onmousemove = null;
+                                document.onmouseup = null;
+                                showButtonsNearImg2();
+                              };
+            }
+  </script>
 </body>
 </html>
-
