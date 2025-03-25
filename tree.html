@@ -31,41 +31,44 @@
       align-items: center;
       margin-top: 40px;
     }
-	#scrollArea {
-	  position: relative;
-	  width: 100%;
-	  height: 80vh;
-	  overflow: scroll;
-	  border: 1px solid #ccc;
-	  background: #fdfdfd;
-	}
-    #zoomCanvas {
-          width: 2000px;
-          height: 2000px;
-          transform-origin: 0 0;
+
+    #scrollArea {
+      position: relative;
+      width: 100%;
+      height: 80vh;
+      overflow: scroll;
+      border: 1px solid #ccc;
+      background: #fdfdfd;
     }
 
-	#layout {
-	  position: relative;
-	  width: 2000px;  /* ← large enough to allow scrolling */
-	  height: 2000px;
+    #zoomCanvas {
+      width: 2000px;
+      height: 2000px;
+      transform-origin: 0 0;
+    }
+
+    #layout {
+      position: relative;
+      width: 2000px;
+      height: 2000px;
     }
 
     #explanation {
-	  position: fixed;
-	  bottom: 30px;
-	  left: 50%;
-	  transform: translateX(-50%);
-	  z-index: 10;
-	  background: rgba(255, 255, 255, 0.95);
-	  padding: 10px 20px;
-	  border-radius: 8px;
-	  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-	  font-size: 16px;
-	  line-height: 1.4;
-	  max-width: 80%;
-	  text-align: center;
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-size: 16px;
+      line-height: 1.4;
+      max-width: 80%;
+      text-align: center;
     }
+
     #continue {
       position: fixed;
       bottom: 30px;
@@ -90,192 +93,326 @@
   </div>
 
   <script>
-  let dragging = false;
-  let dragged = false;
-  let explained = {
-    sf2: false,
-    sn2: false,
-    // Add more as needed
-  };
-  function startExploration() {
-	  // ✅ Make the layout container positioned
+    let dragging = false;
+    let dragged = false;
+    let explained = {
+      sf2: false,
+      sn2: false,
+      proto: false
+    };
+
+    function startExploration() {
       document.getElementById("main").innerHTML = `
-		  <div id="scrollArea">
-           <div id="zoomCanvas">
-			<div id="layout">
-			  <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
-				style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
-			  <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
-				<button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
-				<button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
-			  </div>
-			</div>
-           </div>
-		  </div>
-
-		  <div id="explanation"></div>
-		  <button id="continue" onclick="continueTree()">➡️ Continue</button>
-          <div id="zoomControls" style="position: fixed; bottom: 100px; right: 30px; z-index: 10;">
-            <button onclick="zoomIn()">➕</button>
-            <button onclick="zoomOut()">➖</button>
+        <div id="scrollArea">
+          <div id="zoomCanvas">
+            <div id="layout">
+              <img id="img1" src="images/SF0DC.png" alt="Benchmark Simulation"
+                style="position: absolute; left: 200px; top: 100px; width: 200px; border-radius: 10px; z-index: 1;" />
+              <div style="position: absolute; left: 450px; top: 100px; z-index: 2;">
+                <button onclick="showExplanation('sf')">🌟 Star Formation</button><br>
+                <button onclick="showExplanation('sn')">💥 Supernova Feedback</button>
+              </div>
+            </div>
           </div>
-		`;
-  }
-  function showExplanation(type) {
-    const el = document.getElementById("explanation");
+        </div>
 
-    // Toggle visibility if same explanation is clicked again
-    if (el.dataset.last === type && el.style.display === "block") {
-      el.style.display = "none";
-      el.dataset.last = "";
-      return;
+        <div id="explanation"></div>
+        <button id="continue" onclick="continueTree()">➡️ Continue</button>
+        <div id="zoomControls" style="position: fixed; bottom: 100px; right: 30px; z-index: 10;">
+          <button onclick="zoomIn()">➕</button>
+          <button onclick="zoomOut()">➖</button>
+        </div>
+      `;
     }
 
-    // Otherwise, update and show new explanation
-    el.dataset.last = type;
-    el.style.display = "block";  // force it to reappear if hidden
+    function showExplanation(type) {
+      const el = document.getElementById("explanation");
 
-    if (type === "sf") {
-      el.innerHTML = `
-        <h3>🌟 Star Formation (Fixed Efficiency)</h3>
-        <p>
-          In this benchmark simulation, star formation is governed by a fixed efficiency. Stars form in cold, dense gas regions following a Schmidt law.
-        </p>
-      `;
-    } else if (type === "sn") {
-      el.innerHTML = `
-        <h3>💥 Supernova Feedback (Delayed Cooling)</h3>
-        <p>
-          Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
-        </p>
-      `;
-     } else if (type === "sf2") {
+      if (el.dataset.last === type && el.style.display === "block") {
+        el.style.display = "none";
+        el.dataset.last = "";
+        return;
+      }
 
-         let html = `
-           <h3>🌪️ Turbulent Star Formation</h3>
-           <p>
-              In this model, star formation efficiency varies with local gas turbulence. The local gas velocity disperssion will impact the efficiency of star formation as described by the multi-freefall models.
-           </p>
-         `;
-         if (!explained.sf2) {
-           html = `
+      el.dataset.last = type;
+      el.style.display = "block";
+
+      if (type === "sf") {
+        el.innerHTML = `
+          <h3>🌟 Star Formation (Fixed Efficiency)</h3>
+          <p>
+            In this benchmark simulation, star formation is governed by a fixed efficiency. Stars form in cold, dense gas regions following a Schmidt law.
+          </p>
+        `;
+      } else if (type === "sn") {
+        el.innerHTML = `
+          <h3>💥 Supernova Feedback (Delayed Cooling)</h3>
+          <p>
+            Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
+          </p>
+        `;
+      } else if (type === "sf2") {
+        let html = `
+          <h3>🌪️ Turbulent Star Formation</h3>
+          <p>
+            In this model, star formation efficiency varies with local gas turbulence. The local gas velocity dispersion will impact the efficiency of star formation as described by the multi-freefall models.
+          </p>
+        `;
+        if (!explained.sf2) {
+          html = `
             <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
               ${html}
               <p style="font-style: italic; color: gray;"> New.</p>
             </div>
-           `;
-           explained.sf2 = true;
-         }
-
-         el.style.display = "block";
-         el.innerHTML = html
-
-     } else if (type === "sn2") {
-       el.innerHTML = `
-         <h3>🧨 Mechanical Supernova Feedback</h3>
-         <p>
-           Momentum and energy from supernovae are injected based on resolved physics, pushing and heating surrounding gas more realistically than delayed cooling.
-         </p>
-     `;}
-     }
-  }
-function toggleButtons2() {
-  const btns = document.getElementById("buttons2");
-  const wrapper = document.getElementById("img2wrapper");
-
-  const x = parseInt(wrapper.style.left || wrapper.offsetLeft);
-  const y = parseInt(wrapper.style.top || wrapper.offsetTop);
-
-  btns.style.left = (x + 220) + "px";
-  btns.style.top = y + "px";
-
-  btns.style.display = btns.style.display === "block" ? "none" : "block";
-}
-function continueTree() {
-  // Hide explanation + continue button
-  document.getElementById("explanation").style.display = "none";
-  document.getElementById("continue").style.display = "none";
-
-  // Place both images and draw connecting line in background
-  const layout = document.getElementById("layout");
-  layout.style.position = "relative";
-    layout.insertAdjacentHTML("beforeend", `
-     <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-       <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
-     </svg>
-
-     <div id="img2wrapper" style="position: absolute; left: 200px; top: 550px; width: 200px; z-index: 1; cursor: grab;" onmousedown="startDrag(event)">
-       <img id="img2" src="images/SF1DCe1.png" style="width: 200px; border-radius: 10px;" />
-     </div>
-   `);
-   // Add click listener after image is created
-   setTimeout(() => {
-     const img2 = document.getElementById("img2");
-      img2.addEventListener("click", (e) => {
-      if (!dragged) toggleButtons2();
-            });
-          }, 0);
-     layout.insertAdjacentHTML("beforeend", `
-           <div id="buttons2" style="display: none; position: absolute; left: 420px; top: 550px; z-index: 2;">
-              <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
-              <button onclick="showExplanation('sn')">💥 Supernova Feedback</button> 
+          `;
+          explained.sf2 = true;
+        }
+        el.innerHTML = html;
+      } else if (type === "sn2") {
+        let html = `
+          <h3>🧨 Mechanical Supernova Feedback</h3>
+          <p>
+              Momentum and energy from supernovae are injected based on resolved physics,
+              pushing and heating surrounding gas more realistically than delayed cooling.
+          </p>
+         `;
+         if (!explained.sn2) {
+           html = `
+             <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
+               ${html}
+               <p style="font-style: italic; color: gray;"> New.</p>
+             </div>
+         `;
+         explained.sn2 = true;
+       }
+       el.innerHTML = html;
+       } else if (type === "proto") {
+         let html = `
+          <h3>🌠 Protostellar Feedback</h3>
+          <p>
+            Protostellar outflows reduce star formation by preventing collapse in early phases. This is controlled by a suppression factor (100% = no suppression, 0% = full suppression).
+          </p>
+         `;
+         if (!explained.proto) {
+          html = `
+           <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
+             ${html}
+             <p style="font-style: italic; color: gray;"> New.</p>
            </div>
-     `);
-  
-          
-     let dragging = false;
-     let offsetX, offsetY;
-     const line = () => document.getElementById("line1");
+         `;
+         explained.proto = true;
+       }
+       el.innerHTML = html;
+     }
+    } // ✅ <- this closes showExplanation
+    
+    function startDragGeneric(e, wrapperId, lineId = null) {
+        const wrapper = document.getElementById(wrapperId);
+        const lineEl = lineId ? document.getElementById(lineId) : null;
 
-   function startDrag(e) {
-        dragging = true;
-        dragged = false;
-
-        const wrapper = document.getElementById("img2wrapper");
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        isDragging = false;
 
         offsetX = e.clientX - wrapper.offsetLeft;
         offsetY = e.clientY - wrapper.offsetTop;
 
-        // Hide buttons while dragging
-        document.getElementById("buttons2").style.display = "none";
+        const onMove = (e) => {
+          const dx = Math.abs(e.clientX - dragStartX);
+          const dy = Math.abs(e.clientY - dragStartY);
 
-        document.onmousemove = e => {
-          dragged = true;
-          if (!dragging) return;
+          if (dx > dragThreshold || dy > dragThreshold) {
+             isDragging = true;
+          }
 
-          const x = e.clientX - offsetX;
-          const y = e.clientY - offsetY;
+          if (isDragging) {
+             const x = e.clientX - offsetX;
+             const y = e.clientY - offsetY;
 
-          // Move the wrapper
-          wrapper.style.left = x + "px";
-          wrapper.style.top = y + "px";
+             wrapper.style.left = x + "px";
+             wrapper.style.top = y + "px";
 
-          // Update the line to follow wrapper's center
-          line().setAttribute("x2", x + 100);
-          line().setAttribute("y2", y + 100);
+             // Update connected line if provided
+             if (lineEl) {
+               lineEl.setAttribute("x2", x + 100); // center of image
+               lineEl.setAttribute("y2", y + 100);
+             }
+         }
         };
 
-        document.onmouseup = () => {
-          dragging = false;
-          dragged = false;
-          document.onmousemove = null;
-          document.onmouseup = null;
-
-          // Show buttons again
-          document.getElementById("buttons2").style.display = "block";
+        const onUp = () => {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
         };
-      }
-      let zoomLevel = 1;
 
-      function zoomIn() {
-                  zoomLevel *= 1.1;
-                  document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
-            }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
 
-      function zoomOut() {
-                  zoomLevel /= 1.1;
-                  document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
-            }
+
+    function toggleButtons2() {
+      const btns = document.getElementById("buttons2");
+      const wrapper = document.getElementById("img2wrapper");
+
+      const x = parseInt(wrapper.style.left || wrapper.offsetLeft);
+      const y = parseInt(wrapper.style.top || wrapper.offsetTop);
+
+      btns.style.left = (x + 220) + "px";
+      btns.style.top = y + "px";
+
+      btns.style.display = btns.style.display === "block" ? "none" : "block";
+    }
+
+    function continueTree() {
+      document.getElementById("explanation").style.display = "none";
+      document.getElementById("continue").style.display = "none";
+
+      const layout = document.getElementById("layout");
+      layout.style.position = "relative";
+
+      layout.insertAdjacentHTML("beforeend", `
+        <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
+          <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
+        </svg>
+
+        <div id="img2wrapper" style="position: absolute; left: 200px; top: 550px; width: 200px; z-index: 1; cursor: grab;" onmousedown="startDrag(event)">
+          <img id="img2" src="images/SF1DCe1.png" style="width: 200px; border-radius: 10px;" />
+        </div>
+      `);
+
+      setTimeout(() => {
+       const wrapper = document.getElementById("img2wrapper");
+       wrapper.addEventListener("click", (e) => {
+         if (!dragged) toggleButtons2();
+       });
+      }, 0);
+
+      layout.insertAdjacentHTML("beforeend", `
+        <div id="buttons2" style="display: none; position: absolute; left: 420px; top: 550px; z-index: 2;">
+          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
+          <button onclick="showExplanation('sn')">💥 Supernova Feedback</button> 
+        </div>
+      `);
+      layout.insertAdjacentHTML("beforeend", `
+        <div id="branchButtons" style="position: absolute; left: 200px; top: 760px; z-index: 2;">
+          <button onclick="addMechanicalSN()">🧨 Switch to Mechanical SN</button>
+          <button onclick="addProtoFeedback()">🌠 Add Protostellar Feedback</button>
+        </div>
+      `);
+    }
+    function addMechanicalSN() {
+      const layout = document.getElementById("layout");
+
+      layout.insertAdjacentHTML("beforeend", `
+        <svg width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
+           <line id="line_mech" x1="300" y1="650" x2="500" y2="900" stroke="#999" stroke-width="2" />
+        </svg>
+        <div id="img3wrapper" 
+             style="position: absolute; left: 400px; top: 850px; width: 200px; z-index: 1; cursor: grab;" 
+             onmousedown="startDragGeneric(event, 'img3wrapper', 'line_mech')">
+          <img id="img3" src="images/SF1MEe1.png" style="width: 200px; border-radius: 10px;" />
+        </div>
+        <div style="position: absolute; left: 620px; top: 850px; z-index: 2;">
+          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
+          <button onclick="showExplanation('sn2')">🧨 Mechanical Feedback</button>
+        </div>
+      `);
+    }
+    function addProtoFeedback() {
+      const layout = document.getElementById("layout");
+
+      layout.insertAdjacentHTML("beforeend", `
+        <svg width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
+          <line id="line_proto" x1="300" y1="650" x2="100" y2="900" stroke="#999" stroke-width="2" />
+        </svg>
+        <div id="img4wrapper" 
+             style="position: absolute; left: 0px; top: 850px; width: 200px; z-index: 1; cursor: grab;"
+             onmousedown="startDragGeneric(event, 'img4wrapper', 'line_proto')">
+          <img id="img4" src="images/SF1DC.png" style="width: 200px; border-radius: 10px;" />
+        </div>
+        <div style="position: absolute; left: 220px; top: 850px; z-index: 2;">
+          <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
+          <button onclick="showExplanation('proto')">🌠 Protostellar Feedback</button>
+        </div>
+       `);
+     }
+    let offsetX, offsetY;
+    const line = () => document.getElementById("line1");
+    let isDragging = false;
+    let dragThreshold = 5;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    function startDrag(e) {
+	  const wrapper = document.getElementById("img2wrapper");
+
+	  dragStartX = e.clientX;
+	  dragStartY = e.clientY;
+	  isDragging = false;
+
+	  offsetX = e.clientX - wrapper.offsetLeft;
+	  offsetY = e.clientY - wrapper.offsetTop;
+
+	  const onMove = (e) => {
+		const dx = Math.abs(e.clientX - dragStartX);
+		const dy = Math.abs(e.clientY - dragStartY);
+
+		if (dx > dragThreshold || dy > dragThreshold) {
+		  isDragging = true;
+		}
+
+		if (isDragging) {
+		  const x = e.clientX - offsetX;
+		  const y = e.clientY - offsetY;
+
+		  wrapper.style.left = x + "px";
+		  wrapper.style.top = y + "px";
+
+		  line().setAttribute("x2", x + 100);
+		  line().setAttribute("y2", y + 100);
+          // Also update branch lines if they exist
+          const lineMech = document.getElementById("line_mech");
+          if (lineMech) {
+           lineMech.setAttribute("x1", x + 100); // image center x
+           lineMech.setAttribute("y1", y + 100); // image center y
+          }
+
+          const lineProto = document.getElementById("line_proto");
+          if (lineProto) {
+           lineProto.setAttribute("x1", x + 100);
+           lineProto.setAttribute("y1", y + 100);
+          }
+
+		  document.getElementById("buttons2").style.display = "none";
+		}
+	  };
+
+	  const onUp = () => {
+		document.removeEventListener("mousemove", onMove);
+		document.removeEventListener("mouseup", onUp);
+
+		if (!isDragging) {
+		  toggleButtons2(); // Only if it was a click
+		} else {
+		  document.getElementById("buttons2").style.display = "block";
+		}
+	  };
+
+	  document.addEventListener("mousemove", onMove);
+	  document.addEventListener("mouseup", onUp);
+      
+    }
+
+    let zoomLevel = 1;
+    function zoomIn() {
+      zoomLevel *= 1.1;
+      document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
+    }
+
+    function zoomOut() {
+      zoomLevel /= 1.1;
+      document.getElementById("zoomCanvas").style.transform = `scale(${zoomLevel})`;
+    }
   </script>
 </body>
 </html>
