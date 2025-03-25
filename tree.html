@@ -182,13 +182,14 @@
   }
 function toggleButtons2() {
   const btns = document.getElementById("buttons2");
-  const img = document.getElementById("img2");
+  const wrapper = document.getElementById("img2wrapper");
 
-  const x = parseInt(img.style.left || img.offsetLeft);
-  const y = parseInt(img.style.top || img.offsetTop);
-  
-  btns.style.left = (x + 220) + "px";  // 20px gap from image
+  const x = parseInt(wrapper.style.left || wrapper.offsetLeft);
+  const y = parseInt(wrapper.style.top || wrapper.offsetTop);
+
+  btns.style.left = (x + 220) + "px";
   btns.style.top = y + "px";
+
   btns.style.display = btns.style.display === "block" ? "none" : "block";
 }
 function continueTree() {
@@ -228,40 +229,43 @@ function continueTree() {
       const line = () => document.getElementById("line1");
 
       function startDrag(e) {
-          dragging = true;
-          const wrapper = document.getElementById("img2wrapper");
-          const img = e.target;
-          offsetX = e.clientX - img.offsetLeft;
-          offsetY = e.clientY - img.offsetTop;
+        dragging = true;
+        dragged = false;
 
-          // Hide buttons while dragging
-          document.getElementById("buttons2").style.display = "none";
+        const wrapper = document.getElementById("img2wrapper");
 
-          document.onmousemove = e => {
-            dragged = true;
-            if (!dragging) return;
-            const img2 = document.getElementById("img2");
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
+        offsetX = e.clientX - wrapper.offsetLeft;
+        offsetY = e.clientY - wrapper.offsetTop;
 
-            img2.style.left = x + "px";
-            img2.style.top = y + "px";
+        // Hide buttons while dragging
+        document.getElementById("buttons2").style.display = "none";
 
-            // Move line to follow image center
-            line().setAttribute("x2", x + 100);
-            line().setAttribute("y2", y + 100);
-          };
+        document.onmousemove = e => {
+          dragged = true;
+          if (!dragging) return;
 
-          document.onmouseup = () => {
-            dragging = false;
-            dragged = false;
-            document.onmousemove = null;
-            document.onmouseup = null;
+          const x = e.clientX - offsetX;
+          const y = e.clientY - offsetY;
 
-            // Show buttons again
-            document.getElementById("buttons2").style.display = "block";
-          };
-            }
+          // Move the wrapper
+          wrapper.style.left = x + "px";
+          wrapper.style.top = y + "px";
+
+          // Update the line to follow wrapper's center
+          line().setAttribute("x2", x + 100);
+          line().setAttribute("y2", y + 100);
+        };
+
+        document.onmouseup = () => {
+          dragging = false;
+          dragged = false;
+          document.onmousemove = null;
+          document.onmouseup = null;
+
+          // Show buttons again
+          document.getElementById("buttons2").style.display = "block";
+        };
+      }
       let zoomLevel = 1;
 
       function zoomIn() {
