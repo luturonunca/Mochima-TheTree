@@ -90,6 +90,13 @@
   </div>
 
   <script>
+  let dragging = false;
+  let dragged = false;
+  let explained = {
+    sf2: false,
+    sn2: false,
+    // Add more as needed
+  };
   function startExploration() {
 	  // ✅ Make the layout container positioned
       document.getElementById("main").innerHTML = `
@@ -117,6 +124,17 @@
   function showExplanation(type) {
     const el = document.getElementById("explanation");
 
+    // Toggle visibility if same explanation is clicked again
+    if (el.dataset.last === type && el.style.display === "block") {
+      el.style.display = "none";
+      el.dataset.last = "";
+      return;
+    }
+
+    // Otherwise, update and show new explanation
+    el.dataset.last = type;
+    el.style.display = "block";  // force it to reappear if hidden
+
     if (type === "sf") {
       el.innerHTML = `
         <h3>🌟 Star Formation (Fixed Efficiency)</h3>
@@ -131,13 +149,28 @@
           Supernova explosions inject energy into the gas and temporarily shut off cooling in the surrounding region to allow the blast to affect dynamics.
         </p>
       `;
-          } else if (type === "sf2") {
-                      el.innerHTML = `
-                        <h3>🌪️ Turbulent Star Formation</h3>
-         <p>
-           In this model, star formation efficiency varies with local gas turbulence. Dense, turbulent regions trigger faster star formation than quiescent ones.
-         </p>
-       `;
+     } else if (type === "sf2") {
+
+         let html = `
+           <h3>🌪️ Turbulent Star Formation</h3>
+           <p>
+              In this model, star formation efficiency varies with local gas turbulence. The local gas velocity disperssion will impact the efficiency of star formation as described by the multi-freefall models.
+           </p>
+         `;
+         if (!explained.sf2) {
+           html = `
+            <div style="background: #e6f9e6; padding: 10px; border-radius: 8px;">
+              ${html}
+              <p style="font-style: italic; color: gray;"> New.</p>
+            </div>
+           `;
+           explained.sf2 = true;
+         }
+
+         const el = document.getElementById("explanation");
+         el.style.display = "block";
+         el.innerHTML = html
+
      } else if (type === "sn2") {
        el.innerHTML = `
          <h3>🧨 Mechanical Supernova Feedback</h3>
@@ -145,7 +178,19 @@
            Momentum and energy from supernovae are injected based on resolved physics, pushing and heating surrounding gas more realistically than delayed cooling.
          </p>
        `;
+     }
   }
+function toggleButtons2() {
+  const btns = document.getElementById("buttons2");
+  const img = document.getElementById("img2");
+
+  const x = parseInt(img.style.left || img.offsetLeft);
+  const y = parseInt(img.style.top || img.offsetTop);
+  
+  btns.style.left = (x + 220) + "px";  // 20px gap from image
+  btns.style.top = y + "px";
+  btns.style.display = btns.style.display === "block" ? "none" : "block";
+}
 function continueTree() {
   // Hide explanation + continue button
   document.getElementById("explanation").style.display = "none";
@@ -155,14 +200,22 @@ function continueTree() {
   const layout = document.getElementById("layout");
   layout.style.position = "relative";
           layout.insertAdjacentHTML("beforeend", `
-            <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
-              <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
-            </svg>
-
-            <img id="img2" src="images/SF1DCe1.png"
+            <div id="img2wrapper" style="position: absolute; left: 0px; top: 0px; width: 200px; z-index: 0;">
+               <svg id="connector" width="2000" height="2000" style="position: absolute; top: 0; left: 0; z-index: 0;">
+                <line id="line1" x1="300" y1="200" x2="300" y2="600" stroke="#999" stroke-width="2" />
+               </svg>
+               <img id="img2" src="images/SF1DCe1.png"
                  style="position: absolute; left: 200px; top: 550px; width: 200px; border-radius: 10px; z-index: 1; cursor: grab;"
                  onmousedown="startDrag(event)" />
+            </div>
           `);
+          // Add click listener after image is created
+          setTimeout(() => {
+            const img2 = document.getElementById("img2");
+            img2.addEventListener("click", (e) => {
+              if (!dragged) toggleButtons2();
+            });
+          }, 0);
           layout.insertAdjacentHTML("beforeend", `
            <div id="buttons2" style="display: none; position: absolute; left: 420px; top: 550px; z-index: 2;">
               <button onclick="showExplanation('sf2')">🌪️ Turbulent SF</button><br>
@@ -170,7 +223,7 @@ function continueTree() {
            </div>
                       `);
   
-}
+          }
       let dragging = false;
       let offsetX, offsetY;
       const line = () => document.getElementById("line1");
@@ -181,7 +234,11 @@ function continueTree() {
                   offsetX = e.clientX - img.offsetLeft;
                   offsetY = e.clientY - img.offsetTop;
 
+                  // Hide buttons while dragging
+                  document.getElementById("buttons2").style.display = "none";
+
                   document.onmousemove = e => {
+                                dragged = true;
                                 if (!dragging) return;
                                 const img2 = document.getElementById("img2");
                                 const x = e.clientX - offsetX;
@@ -190,15 +247,18 @@ function continueTree() {
                                 img2.style.left = x + "px";
                                 img2.style.top = y + "px";
 
-                                // Update the line endpoint to center of img2
-                                line().setAttribute("x2", x + 100);  // 100 = half of 200px image width
+                                // Move line to follow image center
+                                line().setAttribute("x2", x + 100);
                                 line().setAttribute("y2", y + 100);
                               };
 
                   document.onmouseup = () => {
                                 dragging = false;
+                                dragged = false;
                                 document.onmousemove = null;
                                 document.onmouseup = null;
+
+                                // Show buttons again
                                 document.getElementById("buttons2").style.display = "block";
                               };
             }
